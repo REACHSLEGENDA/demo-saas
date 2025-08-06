@@ -3,10 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSession } from "@/contexts/SessionContext";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { Package, Utensils, ShoppingCart, DollarSign } from 'lucide-react'; // Import icons
 
 const Index = () => {
   const { session } = useSession();
   const [firstName, setFirstName] = useState<string | null>(null);
+  const [criticalIngredientsCount, setCriticalIngredientsCount] = useState<number>(0);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -24,7 +26,44 @@ const Index = () => {
         }
       }
     };
+
+    const fetchCriticalIngredients = async () => {
+      if (session?.user?.id) {
+        const { count, error } = await supabase
+          .from('ingredients')
+          .select('*', { count: 'exact' })
+          .eq('user_id', session.user.id)
+          .lte('stock', supabase.col('min_stock_level'));
+
+        if (error) {
+          console.error("Error fetching critical ingredients:", error);
+          setCriticalIngredientsCount(0);
+        } else {
+          setCriticalIngredientsCount(count || 0);
+        }
+      }
+    };
+
     fetchProfile();
+    fetchCriticalIngredients();
+
+    // Set up real-time subscription for ingredients
+    const channel = supabase
+      .channel('public:ingredients')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'ingredients', filter: `user_id=eq.${session?.user?.id}` },
+        (payload) => {
+          console.log('Change received!', payload);
+          // Re-fetch critical ingredients on any change to the ingredients table
+          fetchCriticalIngredients();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      channel.unsubscribe();
+    };
   }, [session]);
 
   return (
@@ -57,7 +96,7 @@ const Index = () => {
             <Utensils className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">5</div>
+            <div className="text-2xl font-bold">{criticalIngredientsCount}</div>
             <p className="text-xs text-muted-foreground">
               Ingredientes con bajo stock
             </p>
@@ -96,7 +135,5 @@ const Index = () => {
     </div>
   );
 };
-
-import { Package, Utensils, ShoppingCart, DollarSign } from 'lucide-react'; // Import icons
 
 export default Index;

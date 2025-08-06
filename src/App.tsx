@@ -10,7 +10,8 @@ import { SessionContextProvider } from "./contexts/SessionContext";
 import DashboardLayout from "./components/layout/DashboardLayout";
 import { useSession } from "./contexts/SessionContext";
 import React from "react";
-import Products from "./pages/Products"; // Import the Products page
+import Products from "./pages/Products";
+import Ingredients from "./pages/Ingredients"; // Import the Ingredients page
 
 const queryClient = new QueryClient();
 
@@ -52,7 +53,8 @@ const App = () => (
               }
             >
               <Route index element={<Index />} /> {/* Default route for DashboardLayout */}
-              <Route path="products" element={<Products />} /> {/* Add the Products route */}
+              <Route path="products" element={<Products />} />
+              <Route path="ingredients" element={<Ingredients />} /> {/* Add the Ingredients route */}
               {/* ADD ALL CUSTOM ROUTES HERE AS NESTED ROUTES */}
             </Route>
             <Route path="*" element={<NotFound />} />
