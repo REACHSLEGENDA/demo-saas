@@ -7,24 +7,24 @@ import { Package, Utensils, ShoppingCart, DollarSign } from 'lucide-react';
 
 const Index = () => {
   const { session } = useSession();
-  const [userName, setUserName] = useState<string | null>(null); // Changed from firstName to userName
+  const [firstName, setFirstName] = useState<string | null>(null);
   const [totalIngredientsCount, setTotalIngredientsCount] = useState<number>(0);
   const [productCount, setProductCount] = useState<number>(0);
-  const [pendingOrdersCount, setPendingOrdersCount] = useState<number>(0);
+  const [pendingOrdersCount, setPendingOrdersCount] = useState<number>(0); // State for pending orders
 
   useEffect(() => {
     const fetchProfile = async () => {
       if (session?.user?.id) {
         const { data, error } = await supabase
           .from('profiles')
-          .select('first_name, username') // Fetch username as well
+          .select('first_name')
           .eq('id', session.user.id)
           .single();
 
         if (error) {
           console.error("Error fetching profile:", error);
         } else if (data) {
-          setUserName(data.username || data.first_name || "Usuario"); // Prefer username, then first_name, then default
+          setFirstName(data.first_name);
         }
       }
     };
@@ -61,7 +61,7 @@ const Index = () => {
       }
     };
 
-    const fetchPendingOrdersCount = async () => {
+    const fetchPendingOrdersCount = async () => { // New function for pending orders count
       if (session?.user?.id) {
         const { count, error } = await supabase
           .from('orders')
@@ -81,7 +81,7 @@ const Index = () => {
     fetchProfile();
     fetchTotalIngredientsCount();
     fetchProductCount();
-    fetchPendingOrdersCount();
+    fetchPendingOrdersCount(); // Call new function
 
     // Set up real-time subscription for ingredients
     const ingredientsChannel = supabase
@@ -91,7 +91,7 @@ const Index = () => {
         { event: '*', schema: 'public', table: 'ingredients', filter: `user_id=eq.${session?.user?.id}` },
         (payload) => {
           console.log('Change received from ingredients!', payload);
-          fetchTotalIngredientsCount();
+          fetchTotalIngredientsCount(); // Re-fetch total ingredients on any change
         }
       )
       .subscribe();
@@ -104,7 +104,7 @@ const Index = () => {
         { event: '*', schema: 'public', table: 'products', filter: `user_id=eq.${session?.user?.id}` },
         (payload) => {
           console.log('Change received from products!', payload);
-          fetchProductCount();
+          fetchProductCount(); // Re-fetch product count on any change
         }
       )
       .subscribe();
@@ -117,7 +117,7 @@ const Index = () => {
         { event: '*', schema: 'public', table: 'orders', filter: `user_id=eq.${session?.user?.id}` },
         (payload) => {
           console.log('Change received from orders!', payload);
-          fetchPendingOrdersCount();
+          fetchPendingOrdersCount(); // Re-fetch pending orders on any change
         }
       )
       .subscribe();
@@ -125,7 +125,7 @@ const Index = () => {
     return () => {
       ingredientsChannel.unsubscribe();
       productsChannel.unsubscribe();
-      ordersChannel.unsubscribe();
+      ordersChannel.unsubscribe(); // Unsubscribe from orders channel
     };
   }, [session]);
 
@@ -133,7 +133,7 @@ const Index = () => {
     <div className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
       <div className="flex items-center">
         <h1 className="text-lg font-semibold md:text-2xl">
-          Bienvenido, {userName || "Usuario"}! {/* Display username */}
+          Bienvenido, {firstName || session?.user?.email || "Usuario"}!
         </h1>
       </div>
       <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
@@ -173,11 +173,10 @@ const Index = () => {
             <ShoppingCart className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{pendingOrdersCount}</div>
+            <div className="text-2xl font-bold">{pendingOrdersCount}</div> {/* Display actual pending orders */}
             <p className="text-xs text-muted-foreground">
               Pedidos en estado pendiente
             </p>
-          </p>
           </CardContent>
         </Card>
         <Card>
@@ -188,13 +187,14 @@ const Index = () => {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$0.00</div>
+            <div className="text-2xl font-bold">$0.00</div> {/* Placeholder */}
             <p className="text-xs text-muted-foreground">
               (Funcionalidad próxima)
             </p>
           </CardContent>
         </Card>
       </div>
+      {/* You can add more dashboard content here */}
     </div>
   );
 };
