@@ -133,7 +133,7 @@ const Index = () => {
     <div className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
       <div className="flex items-center">
         <h1 className="text-lg font-semibold md:text-2xl">
-          Bienvenido, {firstName || session?.user?.email || "Usuario"}!
+          Bienvenido, {firstName || "Usuario"}!
         </h1>
       </div>
       <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
