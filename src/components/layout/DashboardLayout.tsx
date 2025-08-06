@@ -37,7 +37,7 @@ const DashboardLayout: React.FC = () => {
             {/* Mobile sidebar trigger is handled within Sidebar component */}
             <Sidebar />
           </div>
-          <h1 className="text-xl font-semibold">Pastelería SaaS Dashboard</h1>
+          <h1 className="text-xl font-semibold">SweetTrack Dashboard</h1> {/* Renamed */}
           <Button variant="ghost" size="icon" onClick={handleLogout}>
             <LogOut className="h-5 w-5" />
             <span className="sr-only">Cerrar sesión</span>
