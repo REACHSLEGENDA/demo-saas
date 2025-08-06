@@ -80,7 +80,7 @@ export const OrderForm: React.FC<OrderFormProps> = ({ initialData, onSuccess, on
     defaultValues: {
       customer_name: '',
       status: 'pending',
-      items: [],
+      items: [], // This is the default, but it's never updated by a FormField
     },
   });
 
@@ -90,17 +90,12 @@ export const OrderForm: React.FC<OrderFormProps> = ({ initialData, onSuccess, on
   }, [selectedProductsForOrder]);
 
   useEffect(() => {
-    // When editing an existing order, populate the form with its items
-    // NOTE: This initialData handling for items is simplified.
-    // A full implementation for editing order items would be more complex,
-    // involving fetching existing order_items and managing their state.
     if (initialData) {
       form.reset({
         customer_name: initialData.customer_name || '',
         status: initialData.status,
-        items: [], // We won't pre-populate items for editing for now to keep it simple
+        items: [], 
       });
-      // If you need to edit items, you'd fetch them here and set setSelectedProductsForOrder
     } else {
       form.reset();
       setSelectedProductsForOrder([]);
@@ -123,12 +118,10 @@ export const OrderForm: React.FC<OrderFormProps> = ({ initialData, onSuccess, on
     const existingItemIndex = selectedProductsForOrder.findIndex(item => item.product_id === currentProductId);
 
     if (existingItemIndex > -1) {
-      // Update quantity if product already exists in the list
       const updatedItems = [...selectedProductsForOrder];
       updatedItems[existingItemIndex].quantity += currentQuantity;
       setSelectedProductsForOrder(updatedItems);
     } else {
-      // Add new product to the list
       setSelectedProductsForOrder([
         ...selectedProductsForOrder,
         {
@@ -140,7 +133,6 @@ export const OrderForm: React.FC<OrderFormProps> = ({ initialData, onSuccess, on
       ]);
     }
 
-    // Reset product selection and quantity
     setCurrentProductId('');
     setCurrentQuantity(1);
   };
@@ -155,8 +147,14 @@ export const OrderForm: React.FC<OrderFormProps> = ({ initialData, onSuccess, on
       return;
     }
 
-    if (selectedProductsForOrder.length === 0) {
-      showError('Debe añadir al menos un producto al pedido.');
+    // Sincronizar el array de productos seleccionados con el campo 'items' del formulario
+    // Esto asegura que Zod valide correctamente la lista de ítems.
+    form.setValue('items', selectedProductsForOrder);
+    await form.trigger('items'); // Forzar la revalidación del campo 'items'
+
+    if (form.formState.errors.items) {
+      // Si hay un error de validación en 'items', mostrar el mensaje y detener el envío
+      showError(form.formState.errors.items.message || 'Error de validación en los productos del pedido.');
       return;
     }
 
@@ -274,8 +272,9 @@ export const OrderForm: React.FC<OrderFormProps> = ({ initialData, onSuccess, on
               <PlusCircle className="h-4 w-4" />
             </Button>
           </div>
-          {selectedProductsForOrder.length === 0 && (
-            <p className="text-sm text-muted-foreground">Añade productos al pedido.</p>
+          {/* La validación de Zod ahora manejará este mensaje */}
+          {form.formState.errors.items && (
+            <FormMessage>{form.formState.errors.items.message}</FormMessage>
           )}
           <ul className="space-y-2">
             {selectedProductsForOrder.map((item) => (
@@ -294,9 +293,6 @@ export const OrderForm: React.FC<OrderFormProps> = ({ initialData, onSuccess, on
               </li>
             ))}
           </ul>
-          {form.formState.errors.items && (
-            <FormMessage>{form.formState.errors.items.message}</FormMessage>
-          )}
         </div>
 
         <FormItem>
