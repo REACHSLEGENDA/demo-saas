@@ -1,92 +1,49 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { showError } from '@/utils/toast';
-
-interface UserProfile {
-  id: string;
-  first_name: string | null;
-  last_name: string | null;
-  avatar_url: string | null;
-  username: string | null;
-  role: 'admin' | 'usuario' | 'standard' | null; // 'standard' for backward compatibility if needed
-}
+import { useNavigate } from 'react-router-dom';
 
 interface SessionContextType {
   session: Session | null;
-  userProfile: UserProfile | null;
-  isLoading: boolean;
-  isAdmin: boolean;
-  isUser: boolean;
+  loading: boolean;
 }
 
 const SessionContext = createContext<SessionContextType | undefined>(undefined);
 
-export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export const SessionContextProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [session, setSession] = useState<Session | null>(null);
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchSessionAndProfile = async () => {
-      setIsLoading(true);
-      const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, currentSession) => {
+      setSession(currentSession);
+      setLoading(false);
 
-      if (session) {
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
-
-        if (profileError) {
-          console.error('Error fetching user profile:', profileError);
-          showError('Error al cargar el perfil del usuario.');
-          setUserProfile(null);
-        } else {
-          setUserProfile(profileData as UserProfile);
+      if (_event === 'SIGNED_IN' || _event === 'USER_UPDATED') {
+        if (currentSession && location.pathname === '/login') {
+          navigate('/');
         }
-      } else {
-        setUserProfile(null);
+      } else if (_event === 'SIGNED_OUT') {
+        navigate('/login');
       }
-      setIsLoading(false);
-    };
+    });
 
-    fetchSessionAndProfile();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      if (session) {
-        const fetchProfileOnAuthChange = async () => {
-          const { data: profileData, error: profileError } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-
-          if (profileError) {
-            console.error('Error fetching user profile on auth change:', profileError);
-            showError('Error al cargar el perfil del usuario.');
-            setUserProfile(null);
-          } else {
-            setUserProfile(profileData as UserProfile);
-          }
-        };
-        fetchProfileOnAuthChange();
-      } else {
-        setUserProfile(null);
+    supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
+      setSession(currentSession);
+      setLoading(false);
+      if (!currentSession && location.pathname !== '/login') {
+        navigate('/login');
+      } else if (currentSession && location.pathname === '/login') {
+        navigate('/');
       }
     });
 
     return () => subscription.unsubscribe();
-  }, []);
-
-  const isAdmin = userProfile?.role === 'admin';
-  const isUser = userProfile?.role === 'usuario';
+  }, [navigate]);
 
   return (
-    <SessionContext.Provider value={{ session, userProfile, isLoading, isAdmin, isUser }}>
+    <SessionContext.Provider value={{ session, loading }}>
       {children}
     </SessionContext.Provider>
   );
@@ -95,7 +52,7 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
 export const useSession = () => {
   const context = useContext(SessionContext);
   if (context === undefined) {
-    throw new Error('useSession must be used within a SessionProvider');
+    throw new Error('useSession must be used within a SessionContextProvider');
   }
   return context;
 };

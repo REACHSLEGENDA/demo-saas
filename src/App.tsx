@@ -2,30 +2,51 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
-import Auth from "./pages/Auth";
-import AdminDashboard from "./pages/AdminDashboard";
-import { SessionProvider, useSession } from "./contexts/SessionContext";
+import Login from "./pages/Login";
+import { SessionContextProvider } from "./contexts/SessionContext";
+import DashboardLayout from "./components/layout/DashboardLayout";
+import { useSession } from "./contexts/SessionContext";
 import React from "react";
+import Products from "./pages/Products";
+import Ingredients from "./pages/Ingredients";
+import Orders from "./pages/Orders";
+import CakeQuoter from "./pages/CakeQuoter";
+import CakeQuoterSettings from "./pages/CakeQuoterSettings";
+import POS from "./pages/POS";
+import SalesManagement from "./pages/SalesManagement";
+import UserManagement from "./pages/UserManagement"; // Import the new UserManagement page
+import { useUserRole } from "./hooks/useUserRole"; // Import useUserRole
 
 const queryClient = new QueryClient();
 
-// Componente para proteger rutas
+// Un componente wrapper para proteger rutas
 const ProtectedRoute: React.FC<{ children: React.ReactNode; adminOnly?: boolean }> = ({ children, adminOnly = false }) => {
-  const { session, isLoading, isAdmin } = useSession();
+  const { session, loading } = useSession();
+  const { role, loading: roleLoading } = useUserRole();
 
-  if (isLoading) {
-    return <div className="min-h-screen flex items-center justify-center">Cargando...</div>;
+  if (loading || roleLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
+        <p className="text-xl text-gray-600 dark:text-gray-400">Cargando...</p>
+      </div>
+    );
   }
 
   if (!session) {
-    return <Navigate to="/auth" replace />;
+    // SessionContext ya maneja la navegación a /login
+    return null;
   }
 
-  if (adminOnly && !isAdmin) {
-    return <Navigate to="/" replace />; // Redirect non-admins from admin-only routes
+  if (adminOnly && role !== 'admin') {
+    // Redirect or show access denied for non-admins trying to access admin-only routes
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
+        <p className="text-xl text-red-600 dark:text-red-400">Acceso Denegado. Solo administradores.</p>
+      </div>
+    );
   }
 
   return <>{children}</>;
@@ -37,15 +58,31 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <SessionProvider>
+        <SessionContextProvider>
           <Routes>
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-            <Route path="/admin/users" element={<ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="/login" element={<Login />} />
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute>
+                  <DashboardLayout />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<Index />} />
+              <Route path="products" element={<Products />} />
+              <Route path="ingredients" element={<Ingredients />} />
+              <Route path="orders" element={<Orders />} />
+              <Route path="cake-quoter" element={<CakeQuoter />} />
+              <Route path="cake-quoter-settings" element={<CakeQuoterSettings />} />
+              <Route path="pos" element={<POS />} />
+              <Route path="sales-management" element={<SalesManagement />} />
+              <Route path="user-management" element={<ProtectedRoute adminOnly={true}><UserManagement /></ProtectedRoute>} /> {/* New admin-only route */}
+              {/* AÑADE TODAS LAS RUTAS PERSONALIZADAS AQUÍ COMO RUTAS ANIDADAS */}
+            </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
-        </SessionProvider>
+        </SessionContextProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
