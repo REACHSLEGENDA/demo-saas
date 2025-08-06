@@ -5,10 +5,33 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
-import Login from "./pages/Login"; // Import the Login page
-import { SessionContextProvider } from "./contexts/SessionContext"; // Import the SessionContextProvider
+import Login from "./pages/Login";
+import { SessionContextProvider } from "./contexts/SessionContext";
+import DashboardLayout from "./components/layout/DashboardLayout"; // Import DashboardLayout
+import { useSession } from "./contexts/SessionContext"; // Import useSession to protect routes
+import React from "react";
 
 const queryClient = new QueryClient();
+
+// A wrapper component to protect routes
+const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { session, loading } = useSession();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
+        <p className="text-xl text-gray-600 dark:text-gray-400">Cargando...</p>
+      </div>
+    );
+  }
+
+  if (!session) {
+    // SessionContext already handles navigation to /login
+    return null;
+  }
+
+  return <>{children}</>;
+};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -16,11 +39,21 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <SessionContextProvider> {/* Wrap the Routes with SessionContextProvider */}
+        <SessionContextProvider>
           <Routes>
-            <Route path="/login" element={<Login />} /> {/* Add the Login route */}
-            <Route path="/" element={<Index />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="/login" element={<Login />} />
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute>
+                  <DashboardLayout />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<Index />} /> {/* Default route for DashboardLayout */}
+              {/* ADD ALL CUSTOM ROUTES HERE AS NESTED ROUTES */}
+              {/* Example: <Route path="products" element={<ProductsPage />} /> */}
+            </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
         </SessionContextProvider>
