@@ -29,9 +29,10 @@ interface Product {
 
 // Define OrderItem type for form state
 interface OrderItem {
+  id?: string; // Optional for new items, present for existing ones
   product_id: string;
-  name: string;
-  price: number;
+  name: string; // Product name
+  price: number; // Price at order (price_at_order)
   quantity: number;
 }
 
@@ -48,13 +49,11 @@ const orderSchema = z.object({
   status: z.enum(['pending', 'completed', 'cancelled'], {
     required_error: 'El estado es requerido',
   }),
-  // The 'items' field is still defined for schema completeness,
-  // but its validation will be handled manually in onSubmit for better control.
-  items: z.array(orderItemSchema).optional(), // Make optional as we'll handle its validation manually
+  items: z.array(orderItemSchema).optional(),
 });
 
 interface OrderFormProps {
-  initialData?: any; // For editing existing orders, though item editing will be complex
+  initialData?: any; // For editing existing orders
   onSuccess: () => void;
   onCancel: () => void;
 }
@@ -77,12 +76,41 @@ export const OrderForm: React.FC<OrderFormProps> = ({ initialData, onSuccess, on
     },
   });
 
+  // Fetch existing order items when initialData is provided
+  const { data: existingOrderItems, isLoading: isLoadingOrderItems, error: orderItemsError } = useQuery<OrderItem[]>({
+    queryKey: ['orderItems', initialData?.id],
+    queryFn: async () => {
+      if (!initialData?.id) return [];
+      const { data, error } = await supabase
+        .from('order_items')
+        .select(`
+          id,
+          product_id,
+          quantity,
+          price_at_order,
+          products (
+            name
+          )
+        `)
+        .eq('order_id', initialData.id);
+
+      if (error) throw error;
+      return data.map(item => ({
+        id: item.id,
+        product_id: item.product_id,
+        name: item.products?.name || 'Producto Desconocido', // Handle case where product might be deleted
+        price: item.price_at_order,
+        quantity: item.quantity,
+      }));
+    },
+    enabled: !!initialData?.id, // Only run query if initialData.id exists
+  });
+
   const form = useForm<z.infer<typeof orderSchema>>({
     resolver: zodResolver(orderSchema),
     defaultValues: {
       customer_name: '',
       status: 'pending',
-      // No need to set default for items here as it's managed separately
     },
   });
 
@@ -97,12 +125,14 @@ export const OrderForm: React.FC<OrderFormProps> = ({ initialData, onSuccess, on
         customer_name: initialData.customer_name || '',
         status: initialData.status,
       });
-      // If you need to edit items, you'd fetch them here and set setSelectedProductsForOrder
+      if (existingOrderItems) {
+        setSelectedProductsForOrder(existingOrderItems);
+      }
     } else {
       form.reset();
       setSelectedProductsForOrder([]);
     }
-  }, [initialData, form]);
+  }, [initialData, form, existingOrderItems]);
 
   const handleAddProduct = () => {
     if (!currentProductId || currentQuantity <= 0) {
@@ -135,7 +165,6 @@ export const OrderForm: React.FC<OrderFormProps> = ({ initialData, onSuccess, on
       ]);
     }
 
-    // Clear any existing 'items' error once a product is added
     form.clearErrors('items');
     setCurrentProductId('');
     setCurrentQuantity(1);
@@ -143,8 +172,8 @@ export const OrderForm: React.FC<OrderFormProps> = ({ initialData, onSuccess, on
 
   const handleRemoveProduct = (productId: string) => {
     setSelectedProductsForOrder(selectedProductsForOrder.filter(item => item.product_id !== productId));
-    // If removing the last product, set an error for 'items'
-    if (selectedProductsForOrder.length === 1) { // If only one item was left before removal
+    // If removing the last product in a NEW order, set an error for 'items'
+    if (!initialData && selectedProductsForOrder.length === 1) {
       form.setError('items', { message: 'Debe añadir al menos un producto al pedido.' });
     }
   };
@@ -155,84 +184,123 @@ export const OrderForm: React.FC<OrderFormProps> = ({ initialData, onSuccess, on
       return;
     }
 
-    // Manual validation for selected products
-    if (selectedProductsForOrder.length === 0) {
+    // Manual validation for selected products: ONLY for new orders
+    if (!initialData && selectedProductsForOrder.length === 0) {
       form.setError('items', { message: 'Debe añadir al menos un producto al pedido.' });
       showError('Debe añadir al menos un producto al pedido.');
       return;
     } else {
-      form.clearErrors('items'); // Clear error if products are present
+      form.clearErrors('items');
     }
 
-    console.log("Attempting to create order with data:", {
-      user_id: session.user.id,
-      customer_name: values.customer_name || null,
-      total_amount: totalAmount,
-      status: values.status,
-    });
+    if (initialData) {
+      // UPDATE existing order
+      const { error: orderUpdateError } = await supabase
+        .from('orders')
+        .update({
+          customer_name: values.customer_name || null,
+          total_amount: totalAmount, // Always recalculate based on current items in form
+          status: values.status,
+        })
+        .eq('id', initialData.id);
 
-    // 1. Create the order
-    const { data: orderData, error: orderError } = await supabase
-      .from('orders')
-      .insert({
-        user_id: session.user.id,
-        customer_name: values.customer_name || null,
-        total_amount: totalAmount,
-        status: values.status,
-      })
-      .select()
-      .single();
-
-    if (orderError) {
-      console.error("Supabase error creating order:", orderError);
-      showError('Error al crear el pedido: ' + orderError.message);
-      return;
-    }
-    if (!orderData) {
-      console.error("No order data returned after insert.");
-      showError('Error al crear el pedido: No se recibieron datos del pedido.');
-      return;
-    }
-
-    console.log("Order created successfully:", orderData);
-    const orderId = orderData.id;
-    let allItemsInserted = true;
-
-    // 2. Insert order items (stock update logic removed as per user request)
-    for (const item of selectedProductsForOrder) {
-      console.log("Attempting to insert order item:", {
-        order_id: orderId,
-        product_id: item.product_id,
-        quantity: item.quantity,
-        price_at_order: item.price,
-      });
-      const { error: itemError } = await supabase.from('order_items').insert({
-        order_id: orderId,
-        product_id: item.product_id,
-        quantity: item.quantity,
-        price_at_order: item.price,
-      });
-
-      if (itemError) {
-        console.error(`Supabase error inserting item ${item.name}:`, itemError);
-        showError(`Error al añadir el ítem ${item.name}: ${itemError.message}`);
-        allItemsInserted = false;
-        continue;
+      if (orderUpdateError) {
+        showError('Error al actualizar el pedido: ' + orderUpdateError.message);
+        return;
       }
-      console.log(`Item ${item.name} inserted successfully.`);
-    }
 
-    if (allItemsInserted) {
-      showSuccess('Pedido creado correctamente.');
-      queryClient.invalidateQueries({ queryKey: ['orders'] });
-      onSuccess();
+      // Handle order items update: Delete all existing and re-insert
+      const { error: deleteItemsError } = await supabase
+        .from('order_items')
+        .delete()
+        .eq('order_id', initialData.id);
+
+      if (deleteItemsError) {
+        showError('Error al eliminar ítems antiguos del pedido: ' + deleteItemsError.message);
+        return;
+      }
+
+      let allItemsInserted = true;
+      for (const item of selectedProductsForOrder) {
+        const { error: itemInsertError } = await supabase.from('order_items').insert({
+          order_id: initialData.id,
+          product_id: item.product_id,
+          quantity: item.quantity,
+          price_at_order: item.price,
+        });
+
+        if (itemInsertError) {
+          showError(`Error al añadir el ítem ${item.name}: ${itemInsertError.message}`);
+          allItemsInserted = false;
+          continue;
+        }
+      }
+
+      if (allItemsInserted) {
+        showSuccess('Pedido actualizado correctamente.');
+        queryClient.invalidateQueries({ queryKey: ['orders'] });
+        queryClient.invalidateQueries({ queryKey: ['orderItems', initialData.id] });
+        onSuccess();
+      } else {
+        showError('El pedido se actualizó, pero hubo problemas con algunos ítems. Revisa la consola para más detalles.');
+      }
+
     } else {
-      showError('El pedido se creó, pero hubo problemas con algunos ítems. Revisa la consola para más detalles.');
+      // Create new order (existing logic)
+      const { data: orderData, error: orderError } = await supabase
+        .from('orders')
+        .insert({
+          user_id: session.user.id,
+          customer_name: values.customer_name || null,
+          total_amount: totalAmount,
+          status: values.status,
+        })
+        .select()
+        .single();
+
+      if (orderError) {
+        console.error("Supabase error creating order:", orderError);
+        showError('Error al crear el pedido: ' + orderError.message);
+        return;
+      }
+      if (!orderData) {
+        console.error("No order data returned after insert.");
+        showError('Error al crear el pedido: No se recibieron datos del pedido.');
+        return;
+      }
+
+      const orderId = orderData.id;
+      let allItemsInserted = true;
+
+      for (const item of selectedProductsForOrder) {
+        const { error: itemError } = await supabase.from('order_items').insert({
+          order_id: orderId,
+          product_id: item.product_id,
+          quantity: item.quantity,
+          price_at_order: item.price,
+        });
+
+        if (itemError) {
+          console.error(`Supabase error inserting item ${item.name}:`, itemError);
+          showError(`Error al añadir el ítem ${item.name}: ${itemError.message}`);
+          allItemsInserted = false;
+          continue;
+        }
+      }
+
+      if (allItemsInserted) {
+        showSuccess('Pedido creado correctamente.');
+        queryClient.invalidateQueries({ queryKey: ['orders'] });
+        onSuccess();
+      } else {
+        showError('El pedido se creó, pero hubo problemas con algunos ítems. Revisa la consola para más detalles.');
+      }
     }
   };
 
-  if (isLoadingProducts) return <div>Cargando productos disponibles...</div>;
+  if (isLoadingProducts || isLoadingOrderItems) return <div>Cargando productos/detalles del pedido...</div>;
   if (productsError) return <div>Error al cargar productos: {productsError.message}</div>;
+  if (orderItemsError) return <div>Error al cargar detalles del pedido: {orderItemsError.message}</div>;
 
   return (
     <Form {...form}>
@@ -278,7 +346,6 @@ export const OrderForm: React.FC<OrderFormProps> = ({ initialData, onSuccess, on
               <PlusCircle className="h-4 w-4" />
             </Button>
           </div>
-          {/* Display the error message for 'items' if it exists */}
           {form.formState.errors.items && (
             <FormMessage>{form.formState.errors.items.message}</FormMessage>
           )}
