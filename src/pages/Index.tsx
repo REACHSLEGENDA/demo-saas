@@ -3,15 +3,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSession } from "@/contexts/SessionContext";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Package, Utensils, ShoppingCart, DollarSign } from 'lucide-react'; // Removed AlertTriangle icon
+import { Package, Utensils, ShoppingCart, DollarSign } from 'lucide-react';
 
 const Index = () => {
   const { session } = useSession();
   const [firstName, setFirstName] = useState<string | null>(null);
   const [totalIngredientsCount, setTotalIngredientsCount] = useState<number>(0);
   const [productCount, setProductCount] = useState<number>(0);
-  // const [pendingOrdersCount, setPendingOrdersCount] = useState<number>(0); // Placeholder for future feature
-  // const [todaySales, setTodaySales] = useState<number>(0); // Placeholder for future feature
+  const [pendingOrdersCount, setPendingOrdersCount] = useState<number>(0); // State for pending orders
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -62,9 +61,27 @@ const Index = () => {
       }
     };
 
+    const fetchPendingOrdersCount = async () => { // New function for pending orders count
+      if (session?.user?.id) {
+        const { count, error } = await supabase
+          .from('orders')
+          .select('*', { count: 'exact' })
+          .eq('user_id', session.user.id)
+          .eq('status', 'pending');
+
+        if (error) {
+          console.error("Error fetching pending orders:", error);
+          setPendingOrdersCount(0);
+        } else {
+          setPendingOrdersCount(count || 0);
+        }
+      }
+    };
+
     fetchProfile();
     fetchTotalIngredientsCount();
     fetchProductCount();
+    fetchPendingOrdersCount(); // Call new function
 
     // Set up real-time subscription for ingredients
     const ingredientsChannel = supabase
@@ -92,9 +109,23 @@ const Index = () => {
       )
       .subscribe();
 
+    // Set up real-time subscription for orders
+    const ordersChannel = supabase
+      .channel('public:orders')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'orders', filter: `user_id=eq.${session?.user?.id}` },
+        (payload) => {
+          console.log('Change received from orders!', payload);
+          fetchPendingOrdersCount(); // Re-fetch pending orders on any change
+        }
+      )
+      .subscribe();
+
     return () => {
       ingredientsChannel.unsubscribe();
       productsChannel.unsubscribe();
+      ordersChannel.unsubscribe(); // Unsubscribe from orders channel
     };
   }, [session]);
 
@@ -142,9 +173,9 @@ const Index = () => {
             <ShoppingCart className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div> {/* Placeholder */}
+            <div className="text-2xl font-bold">{pendingOrdersCount}</div> {/* Display actual pending orders */}
             <p className="text-xs text-muted-foreground">
-              (Funcionalidad próxima)
+              Pedidos en estado pendiente
             </p>
           </CardContent>
         </Card>

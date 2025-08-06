@@ -12,7 +12,7 @@ import { useSession } from "./contexts/SessionContext";
 import React from "react";
 import Products from "./pages/Products";
 import Ingredients from "./pages/Ingredients";
-// Removed: import CriticalIngredients from "./pages/CriticalIngredients";
+import Orders from "./pages/Orders"; // Import the new Orders page
 
 const queryClient = new QueryClient();
 
@@ -56,7 +56,7 @@ const App = () => (
               <Route index element={<Index />} /> {/* Default route for DashboardLayout */}
               <Route path="products" element={<Products />} />
               <Route path="ingredients" element={<Ingredients />} />
-              {/* Removed: <Route path="critical-ingredients" element={<CriticalIngredients />} /> */}
+              <Route path="orders" element={<Orders />} /> {/* Add the new Orders route */}
               {/* ADD ALL CUSTOM ROUTES HERE AS NESTED ROUTES */}
             </Route>
             <Route path="*" element={<NotFound />} />
