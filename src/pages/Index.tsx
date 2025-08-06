@@ -177,6 +177,7 @@ const Index = () => {
             <p className="text-xs text-muted-foreground">
               Pedidos en estado pendiente
             </p>
+          </p>
           </CardContent>
         </Card>
         <Card>
