@@ -7,9 +7,10 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import { SessionContextProvider } from "./contexts/SessionContext";
-import DashboardLayout from "./components/layout/DashboardLayout"; // Import DashboardLayout
-import { useSession } from "./contexts/SessionContext"; // Import useSession to protect routes
+import DashboardLayout from "./components/layout/DashboardLayout";
+import { useSession } from "./contexts/SessionContext";
 import React from "react";
+import Products from "./pages/Products"; // Import the Products page
 
 const queryClient = new QueryClient();
 
@@ -51,8 +52,8 @@ const App = () => (
               }
             >
               <Route index element={<Index />} /> {/* Default route for DashboardLayout */}
+              <Route path="products" element={<Products />} /> {/* Add the Products route */}
               {/* ADD ALL CUSTOM ROUTES HERE AS NESTED ROUTES */}
-              {/* Example: <Route path="products" element={<ProductsPage />} /> */}
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
