@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Package, Utensils, ShoppingCart, Users, Settings, Home, AlertTriangle } from 'lucide-react'; // Import AlertTriangle
+import { Package, Utensils, ShoppingCart, Users, Settings, Home } from 'lucide-react'; // Removed AlertTriangle
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -34,7 +34,7 @@ const Sidebar: React.FC = () => {
     { to: "/", label: "Dashboard", icon: <Home className="h-4 w-4" /> },
     { to: "/products", label: "Productos", icon: <Package className="h-4 w-4" /> },
     { to: "/ingredients", label: "Ingredientes", icon: <Utensils className="h-4 w-4" /> },
-    { to: "/critical-ingredients", label: "Ingredientes Críticos", icon: <AlertTriangle className="h-4 w-4" /> }, // New nav item
+    // Removed: { to: "/critical-ingredients", label: "Ingredientes Críticos", icon: <AlertTriangle className="h-4 w-4" /> },
     { to: "/orders", label: "Pedidos", icon: <ShoppingCart className="h-4 w-4" /> },
     { to: "/pos", label: "Punto de Venta", icon: <Users className="h-4 w-4" /> }, // Reusing Users icon for POS for now
     { to: "/users", label: "Usuarios", icon: <Users className="h-4 w-4" /> },

@@ -3,13 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSession } from "@/contexts/SessionContext";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Package, Utensils, ShoppingCart, DollarSign, AlertTriangle } from 'lucide-react'; // Import AlertTriangle icon
+import { Package, Utensils, ShoppingCart, DollarSign } from 'lucide-react'; // Removed AlertTriangle icon
 
 const Index = () => {
   const { session } = useSession();
   const [firstName, setFirstName] = useState<string | null>(null);
-  const [totalIngredientsCount, setTotalIngredientsCount] = useState<number>(0); // Renamed state
-  const [criticalIngredientsCount, setCriticalIngredientsCount] = useState<number>(0); // New state for critical count
+  const [totalIngredientsCount, setTotalIngredientsCount] = useState<number>(0);
   const [productCount, setProductCount] = useState<number>(0);
   // const [pendingOrdersCount, setPendingOrdersCount] = useState<number>(0); // Placeholder for future feature
   // const [todaySales, setTodaySales] = useState<number>(0); // Placeholder for future feature
@@ -31,35 +30,18 @@ const Index = () => {
       }
     };
 
-    const fetchTotalIngredientsCount = async () => { // Renamed function
+    const fetchTotalIngredientsCount = async () => {
       if (session?.user?.id) {
         const { count, error } = await supabase
           .from('ingredients')
           .select('*', { count: 'exact' })
-          .eq('user_id', session.user.id); // Fetch all ingredients
+          .eq('user_id', session.user.id);
 
         if (error) {
           console.error("Error fetching total ingredients:", error);
           setTotalIngredientsCount(0);
         } else {
           setTotalIngredientsCount(count || 0);
-        }
-      }
-    };
-
-    const fetchCriticalIngredientsCount = async () => { // New function for critical count
-      if (session?.user?.id) {
-        const { count, error } = await supabase
-          .from('ingredients')
-          .select('*', { count: 'exact' })
-          .eq('user_id', session.user.id)
-          .lte('stock', supabase.col('min_stock_level'));
-
-        if (error) {
-          console.error("Error fetching critical ingredients:", error);
-          setCriticalIngredientsCount(0);
-        } else {
-          setCriticalIngredientsCount(count || 0);
         }
       }
     };
@@ -81,8 +63,7 @@ const Index = () => {
     };
 
     fetchProfile();
-    fetchTotalIngredientsCount(); // Call new function
-    fetchCriticalIngredientsCount(); // Call new function
+    fetchTotalIngredientsCount();
     fetchProductCount();
 
     // Set up real-time subscription for ingredients
@@ -94,7 +75,6 @@ const Index = () => {
         (payload) => {
           console.log('Change received from ingredients!', payload);
           fetchTotalIngredientsCount(); // Re-fetch total ingredients on any change
-          fetchCriticalIngredientsCount(); // Re-fetch critical ingredients on any change
         }
       )
       .subscribe();
@@ -151,20 +131,6 @@ const Index = () => {
             <div className="text-2xl font-bold">{totalIngredientsCount}</div>
             <p className="text-xs text-muted-foreground">
               Total de ingredientes registrados
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Ingredientes Críticos
-            </CardTitle>
-            <AlertTriangle className="h-4 w-4 text-destructive" /> {/* New icon for critical */}
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-destructive">{criticalIngredientsCount}</div>
-            <p className="text-xs text-muted-foreground">
-              Ingredientes con bajo stock
             </p>
           </CardContent>
         </Card>
