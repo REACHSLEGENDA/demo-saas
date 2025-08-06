@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Package, Utensils, ShoppingCart, Users, Settings, Home, Cake } from 'lucide-react'; // Import Cake icon
+import { Package, Utensils, ShoppingCart, Users, Settings, Home, Cake, SlidersHorizontal } from 'lucide-react'; // Import Cake and SlidersHorizontal icons
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -34,7 +34,8 @@ const Sidebar: React.FC = () => {
     { to: "/", label: "Dashboard", icon: <Home className="h-4 w-4" /> },
     { to: "/products", label: "Productos", icon: <Package className="h-4 w-4" /> },
     { to: "/ingredients", label: "Ingredientes", icon: <Utensils className="h-4 w-4" /> },
-    { to: "/cake-quoter", label: "Cotizador de Pasteles", icon: <Cake className="h-4 w-4" /> }, // Nuevo elemento
+    { to: "/cake-quoter", label: "Cotizador de Pasteles", icon: <Cake className="h-4 w-4" /> },
+    { to: "/cake-quoter-settings", label: "Configuración Cotizador", icon: <SlidersHorizontal className="h-4 w-4" /> }, // Nuevo elemento
     { to: "/orders", label: "Pedidos", icon: <ShoppingCart className="h-4 w-4" /> },
     { to: "/pos", label: "Punto de Venta", icon: <Users className="h-4 w-4" /> },
     { to: "/users", label: "Usuarios", icon: <Users className="h-4 w-4" /> },

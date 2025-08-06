@@ -1,9 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { supabase } from '@/integrations/supabase/client';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Form,
   FormControl,
@@ -20,30 +20,12 @@ import { Trash2, PlusCircle, Cake } from 'lucide-react';
 import { showError, showSuccess } from '@/utils/toast';
 import { useSession } from '@/contexts/SessionContext';
 
-// Opciones predefinidas y sus precios
-const CAKE_OPTIONS = {
-  sizes: [
-    { label: 'Chico', value: 'chico', price: 20.00 },
-    { label: 'Mediano', value: 'mediano', price: 35.00 },
-    { label: 'Grande', value: 'grande', price: 50.00 },
-  ],
-  flavors: [
-    { label: 'Chocolate', value: 'chocolate', price: 5.00 },
-    { label: 'Vainilla', value: 'vainilla', price: 4.00 },
-    { label: 'Fresa', value: 'fresa', price: 6.00 },
-  ],
-  fillings: [
-    { label: 'Crema', value: 'crema', price: 3.00 },
-    { label: 'Frutas', value: 'frutas', price: 7.00 },
-    { label: 'Cajeta', value: 'cajeta', price: 5.00 },
-  ],
-  decorations: [
-    { label: 'Frutas Extra', value: 'frutas_extra', price: 8.00 },
-    { label: 'Figuras de Fondant', value: 'figuras_fondant', price: 15.00 },
-    { label: 'Glaseado Especial', value: 'glaseado_especial', price: 10.00 },
-    { label: 'Personalizado (Texto)', value: 'personalizado_texto', price: 5.00 },
-  ],
-};
+interface QuoterOption {
+  id: string;
+  category: string;
+  name: string;
+  price: number;
+}
 
 // Esquema de validación con Zod
 const quoterSchema = z.object({
@@ -53,7 +35,7 @@ const quoterSchema = z.object({
 });
 
 interface QuoteItem {
-  type: 'size' | 'flavor' | 'filling' | 'decoration';
+  type: 'size' | 'flavor' | 'filling' | 'covering' | 'decoration' | 'special_option';
   value: string;
   label: string;
   price: number;
@@ -62,6 +44,7 @@ interface QuoteItem {
 export const CakeQuoterForm: React.FC = () => {
   const queryClient = useQueryClient();
   const { session } = useSession();
+  const userId = session?.user?.id;
 
   const form = useForm<z.infer<typeof quoterSchema>>({
     resolver: zodResolver(quoterSchema),
@@ -73,9 +56,41 @@ export const CakeQuoterForm: React.FC = () => {
   });
 
   const [selectedFillings, setSelectedFillings] = useState<QuoteItem[]>([]);
+  const [selectedCoverings, setSelectedCoverings] = useState<QuoteItem[]>([]);
   const [selectedDecorations, setSelectedDecorations] = useState<QuoteItem[]>([]);
+  const [selectedSpecialOptions, setSelectedSpecialOptions] = useState<QuoteItem[]>([]);
+
   const [currentFillingId, setCurrentFillingId] = useState<string>('');
+  const [currentCoveringId, setCurrentCoveringId] = useState<string>('');
   const [currentDecorationId, setCurrentDecorationId] = useState<string>('');
+  const [currentSpecialOptionId, setCurrentSpecialOptionId] = useState<string>('');
+
+  // Fetch all options dynamically
+  const { data: allOptions, isLoading: isLoadingOptions, error: optionsError } = useQuery<QuoterOption[]>({
+    queryKey: ['cakeQuoterOptions', userId],
+    queryFn: async () => {
+      if (!userId) return [];
+      const { data, error } = await supabase
+        .from('cake_quoter_options')
+        .select('*')
+        .eq('user_id', userId)
+        .order('name', { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!userId,
+  });
+
+  const getOptionsByCategory = (category: string) => {
+    return allOptions?.filter(option => option.category === category) || [];
+  };
+
+  const sizes = getOptionsByCategory('sizes');
+  const flavors = getOptionsByCategory('flavors');
+  const fillings = getOptionsByCategory('fillings');
+  const coverings = getOptionsByCategory('coverings');
+  const decorations = getOptionsByCategory('decorations');
+  const specialOptions = getOptionsByCategory('special_options');
 
   const selectedSize = form.watch('size');
   const selectedFlavor = form.watch('flavor');
@@ -85,19 +100,24 @@ export const CakeQuoterForm: React.FC = () => {
     const breakdown: QuoteItem[] = [];
     let currentTotal = 0;
 
-    const sizeOption = CAKE_OPTIONS.sizes.find(s => s.value === selectedSize);
+    const sizeOption = sizes.find(s => s.id === selectedSize);
     if (sizeOption) {
-      breakdown.push({ type: 'size', ...sizeOption });
+      breakdown.push({ type: 'size', value: sizeOption.id, label: sizeOption.name, price: sizeOption.price });
       currentTotal += sizeOption.price;
     }
 
-    const flavorOption = CAKE_OPTIONS.flavors.find(f => f.value === selectedFlavor);
+    const flavorOption = flavors.find(f => f.id === selectedFlavor);
     if (flavorOption) {
-      breakdown.push({ type: 'flavor', ...flavorOption });
+      breakdown.push({ type: 'flavor', value: flavorOption.id, label: flavorOption.name, price: flavorOption.price });
       currentTotal += flavorOption.price;
     }
 
     selectedFillings.forEach(item => {
+      breakdown.push(item);
+      currentTotal += item.price;
+    });
+
+    selectedCoverings.forEach(item => {
       breakdown.push(item);
       currentTotal += item.price;
     });
@@ -107,51 +127,50 @@ export const CakeQuoterForm: React.FC = () => {
       currentTotal += item.price;
     });
 
+    selectedSpecialOptions.forEach(item => {
+      breakdown.push(item);
+      currentTotal += item.price;
+    });
+
     return { breakdown, total: currentTotal };
-  }, [selectedSize, selectedFlavor, selectedFillings, selectedDecorations]);
+  }, [selectedSize, selectedFlavor, selectedFillings, selectedCoverings, selectedDecorations, selectedSpecialOptions, sizes, flavors]);
 
-  const handleAddFilling = () => {
-    if (!currentFillingId) {
-      showError('Por favor, selecciona un relleno.');
+  const handleAddOption = (
+    currentId: string,
+    optionsList: QuoterOption[],
+    setSelectedItems: React.Dispatch<React.SetStateAction<QuoteItem[]>>,
+    type: QuoteItem['type'],
+    errorMessage: string
+  ) => {
+    if (!currentId) {
+      showError(errorMessage);
       return;
     }
-    const fillingToAdd = CAKE_OPTIONS.fillings.find(f => f.value === currentFillingId);
-    if (fillingToAdd && !selectedFillings.some(f => f.value === currentFillingId)) {
-      setSelectedFillings(prev => [...prev, { type: 'filling', ...fillingToAdd }]);
-      setCurrentFillingId('');
-    } else if (fillingToAdd) {
-      showError('Este relleno ya ha sido añadido.');
+    const optionToAdd = optionsList.find(o => o.id === currentId);
+    if (optionToAdd && !setSelectedItems.arguments[0].some((item: QuoteItem) => item.value === currentId)) {
+      setSelectedItems(prev => [...prev, { type, value: optionToAdd.id, label: optionToAdd.name, price: optionToAdd.price }]);
+    } else if (optionToAdd) {
+      showError('Esta opción ya ha sido añadida.');
     }
   };
 
-  const handleRemoveFilling = (value: string) => {
-    setSelectedFillings(prev => prev.filter(item => item.value !== value));
-  };
-
-  const handleAddDecoration = () => {
-    if (!currentDecorationId) {
-      showError('Por favor, selecciona una decoración.');
-      return;
-    }
-    const decorationToAdd = CAKE_OPTIONS.decorations.find(d => d.value === currentDecorationId);
-    if (decorationToAdd && !selectedDecorations.some(d => d.value === currentDecorationId)) {
-      setSelectedDecorations(prev => [...prev, { type: 'decoration', ...decorationToAdd }]);
-      setCurrentDecorationId('');
-    } else if (decorationToAdd) {
-      showError('Esta decoración ya ha sido añadida.');
-    }
-  };
-
-  const handleRemoveDecoration = (value: string) => {
-    setSelectedDecorations(prev => prev.filter(item => item.value !== value));
+  const handleRemoveOption = (
+    value: string,
+    setSelectedItems: React.Dispatch<React.SetStateAction<QuoteItem[]>>
+  ) => {
+    setSelectedItems(prev => prev.filter(item => item.value !== value));
   };
 
   const handleClearForm = () => {
     form.reset();
     setSelectedFillings([]);
+    setSelectedCoverings([]);
     setSelectedDecorations([]);
+    setSelectedSpecialOptions([]);
     setCurrentFillingId('');
+    setCurrentCoveringId('');
     setCurrentDecorationId('');
+    setCurrentSpecialOptionId('');
     showSuccess('Formulario de cotización limpiado.');
   };
 
@@ -161,8 +180,13 @@ export const CakeQuoterForm: React.FC = () => {
       return;
     }
 
-    if (!selectedSize || !selectedFlavor || selectedFillings.length === 0) {
-      showError('Por favor, selecciona un tamaño, un sabor y al menos un relleno para la cotización.');
+    if (!selectedSize || !selectedFlavor) {
+      showError('Por favor, selecciona un tamaño y un sabor para la cotización.');
+      return;
+    }
+
+    if (selectedFillings.length === 0 && fillings.length > 0) {
+      showError('Por favor, añade al menos un relleno.');
       return;
     }
 
@@ -226,6 +250,9 @@ export const CakeQuoterForm: React.FC = () => {
     }
   };
 
+  if (isLoadingOptions) return <div>Cargando opciones de cotización...</div>;
+  if (optionsError) return <div>Error al cargar opciones de cotización: {optionsError.message}</div>;
+
   return (
     <Card className="w-full">
       <CardHeader>
@@ -261,9 +288,9 @@ export const CakeQuoterForm: React.FC = () => {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {CAKE_OPTIONS.sizes.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label} (${option.price.toFixed(2)})
+                      {sizes.map((option) => (
+                        <SelectItem key={option.id} value={option.id}>
+                          {option.name} (${option.price.toFixed(2)})
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -286,9 +313,9 @@ export const CakeQuoterForm: React.FC = () => {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {CAKE_OPTIONS.flavors.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label} (${option.price.toFixed(2)})
+                      {flavors.map((option) => (
+                        <SelectItem key={option.id} value={option.id}>
+                          {option.name} (${option.price.toFixed(2)})
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -307,18 +334,18 @@ export const CakeQuoterForm: React.FC = () => {
                     <SelectValue placeholder="Añadir relleno" />
                   </SelectTrigger>
                   <SelectContent>
-                    {CAKE_OPTIONS.fillings.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label} (${option.price.toFixed(2)})
+                    {fillings.map((option) => (
+                      <SelectItem key={option.id} value={option.id}>
+                        {option.name} (${option.price.toFixed(2)})
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                <Button type="button" onClick={handleAddFilling} size="icon">
+                <Button type="button" onClick={() => handleAddOption(currentFillingId, fillings, setSelectedFillings, 'filling', 'Por favor, selecciona un relleno.')} size="icon">
                   <PlusCircle className="h-4 w-4" />
                 </Button>
               </div>
-              {selectedFillings.length === 0 && (
+              {selectedFillings.length === 0 && fillings.length > 0 && (
                 <p className="text-sm text-muted-foreground">Añade al menos un relleno.</p>
               )}
               <ul className="space-y-2">
@@ -329,7 +356,44 @@ export const CakeQuoterForm: React.FC = () => {
                       type="button"
                       variant="ghost"
                       size="icon"
-                      onClick={() => handleRemoveFilling(item.value)}
+                      onClick={() => handleRemoveOption(item.value, setSelectedFillings)}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Sección de Coberturas */}
+            <div className="space-y-2">
+              <FormLabel>Coberturas</FormLabel>
+              <div className="flex gap-2">
+                <Select onValueChange={setCurrentCoveringId} value={currentCoveringId}>
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="Añadir cobertura" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {coverings.map((option) => (
+                      <SelectItem key={option.id} value={option.id}>
+                        {option.name} (${option.price.toFixed(2)})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button type="button" onClick={() => handleAddOption(currentCoveringId, coverings, setSelectedCoverings, 'covering', 'Por favor, selecciona una cobertura.')} size="icon">
+                  <PlusCircle className="h-4 w-4" />
+                </Button>
+              </div>
+              <ul className="space-y-2">
+                {selectedCoverings.map((item) => (
+                  <li key={item.value} className="flex items-center justify-between rounded-md border p-2">
+                    <span>{item.label} (${item.price.toFixed(2)})</span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleRemoveOption(item.value, setSelectedCoverings)}
                     >
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
@@ -347,14 +411,14 @@ export const CakeQuoterForm: React.FC = () => {
                     <SelectValue placeholder="Añadir decoración" />
                   </SelectTrigger>
                   <SelectContent>
-                    {CAKE_OPTIONS.decorations.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label} (${option.price.toFixed(2)})
+                    {decorations.map((option) => (
+                      <SelectItem key={option.id} value={option.id}>
+                        {option.name} (${option.price.toFixed(2)})
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                <Button type="button" onClick={handleAddDecoration} size="icon">
+                <Button type="button" onClick={() => handleAddOption(currentDecorationId, decorations, setSelectedDecorations, 'decoration', 'Por favor, selecciona una decoración.')} size="icon">
                   <PlusCircle className="h-4 w-4" />
                 </Button>
               </div>
@@ -366,7 +430,44 @@ export const CakeQuoterForm: React.FC = () => {
                       type="button"
                       variant="ghost"
                       size="icon"
-                      onClick={() => handleRemoveDecoration(item.value)}
+                      onClick={() => handleRemoveOption(item.value, setSelectedDecorations)}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Sección de Opciones Especiales */}
+            <div className="space-y-2">
+              <FormLabel>Opciones Especiales (Opcional)</FormLabel>
+              <div className="flex gap-2">
+                <Select onValueChange={setCurrentSpecialOptionId} value={currentSpecialOptionId}>
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="Añadir opción especial" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {specialOptions.map((option) => (
+                      <SelectItem key={option.id} value={option.id}>
+                        {option.name} (${option.price.toFixed(2)})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button type="button" onClick={() => handleAddOption(currentSpecialOptionId, specialOptions, setSelectedSpecialOptions, 'special_option', 'Por favor, selecciona una opción especial.')} size="icon">
+                  <PlusCircle className="h-4 w-4" />
+                </Button>
+              </div>
+              <ul className="space-y-2">
+                {selectedSpecialOptions.map((item) => (
+                  <li key={item.value} className="flex items-center justify-between rounded-md border p-2">
+                    <span>{item.label} (${item.price.toFixed(2)})</span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleRemoveOption(item.value, setSelectedSpecialOptions)}
                     >
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
