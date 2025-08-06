@@ -37,8 +37,8 @@ const Sidebar: React.FC = () => {
     { to: "/cake-quoter", label: "Cotizador de Pasteles", icon: <Cake className="h-4 w-4" /> },
     { to: "/cake-quoter-settings", label: "Configuración Cotizador", icon: <SlidersHorizontal className="h-4 w-4" /> },
     { to: "/orders", label: "Pedidos", icon: <ShoppingCart className="h-4 w-4" /> },
-    { to: "/pos", label: "Punto de Venta", icon: <Store className="h-4 w-4" /> }, {/* Updated icon to Store */}
-    { to: "/customers", label: "Clientes", icon: <Users className="h-4 w-4" /> }, {/* New Customers link */}
+    { to: "/pos", label: "Punto de Venta", icon: <Store className="h-4 w-4" /> }, // Updated icon to Store
+    { to: "/customers", label: "Clientes", icon: <Users className="h-4 w-4" /> }, // New Customers link
     { to: "/users", label: "Usuarios", icon: <Users className="h-4 w-4" /> },
     { to: "/settings", label: "Configuración", icon: <Settings className="h-4 w-4" /> },
   ];
