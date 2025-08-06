@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Package, Utensils, ShoppingCart, Users, Settings, Home, Cake, SlidersHorizontal, Store } from 'lucide-react'; // Import Store icon for POS
+import { Package, Utensils, ShoppingCart, Users, Settings, Home, Cake, SlidersHorizontal, Store } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -37,8 +37,7 @@ const Sidebar: React.FC = () => {
     { to: "/cake-quoter", label: "Cotizador de Pasteles", icon: <Cake className="h-4 w-4" /> },
     { to: "/cake-quoter-settings", label: "Configuración Cotizador", icon: <SlidersHorizontal className="h-4 w-4" /> },
     { to: "/orders", label: "Pedidos", icon: <ShoppingCart className="h-4 w-4" /> },
-    { to: "/pos", label: "Punto de Venta", icon: <Store className="h-4 w-4" /> }, // Updated icon to Store
-    { to: "/customers", label: "Clientes", icon: <Users className="h-4 w-4" /> }, // New Customers link
+    { to: "/pos", label: "Punto de Venta", icon: <Store className="h-4 w-4" /> },
     { to: "/users", label: "Usuarios", icon: <Users className="h-4 w-4" /> },
     { to: "/settings", label: "Configuración", icon: <Settings className="h-4 w-4" /> },
   ];
