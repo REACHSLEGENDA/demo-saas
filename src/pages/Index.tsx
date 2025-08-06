@@ -9,6 +9,9 @@ const Index = () => {
   const { session } = useSession();
   const [firstName, setFirstName] = useState<string | null>(null);
   const [criticalIngredientsCount, setCriticalIngredientsCount] = useState<number>(0);
+  const [productCount, setProductCount] = useState<number>(0);
+  // const [pendingOrdersCount, setPendingOrdersCount] = useState<number>(0); // Placeholder for future feature
+  // const [todaySales, setTodaySales] = useState<number>(0); // Placeholder for future feature
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -44,25 +47,55 @@ const Index = () => {
       }
     };
 
+    const fetchProductCount = async () => {
+      if (session?.user?.id) {
+        const { count, error } = await supabase
+          .from('products')
+          .select('*', { count: 'exact' })
+          .eq('user_id', session.user.id);
+
+        if (error) {
+          console.error("Error fetching product count:", error);
+          setProductCount(0);
+        } else {
+          setProductCount(count || 0);
+        }
+      }
+    };
+
     fetchProfile();
     fetchCriticalIngredients();
+    fetchProductCount();
 
     // Set up real-time subscription for ingredients
-    const channel = supabase
+    const ingredientsChannel = supabase
       .channel('public:ingredients')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'ingredients', filter: `user_id=eq.${session?.user?.id}` },
         (payload) => {
-          console.log('Change received!', payload);
-          // Re-fetch critical ingredients on any change to the ingredients table
-          fetchCriticalIngredients();
+          console.log('Change received from ingredients!', payload);
+          fetchCriticalIngredients(); // Re-fetch critical ingredients on any change
+        }
+      )
+      .subscribe();
+
+    // Set up real-time subscription for products
+    const productsChannel = supabase
+      .channel('public:products')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'products', filter: `user_id=eq.${session?.user?.id}` },
+        (payload) => {
+          console.log('Change received from products!', payload);
+          fetchProductCount(); // Re-fetch product count on any change
         }
       )
       .subscribe();
 
     return () => {
-      channel.unsubscribe();
+      ingredientsChannel.unsubscribe();
+      productsChannel.unsubscribe();
     };
   }, [session]);
 
@@ -77,14 +110,14 @@ const Index = () => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Productos en Stock
+              Productos Registrados
             </CardTitle>
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">2,350</div>
+            <div className="text-2xl font-bold">{productCount}</div>
             <p className="text-xs text-muted-foreground">
-              +20.1% desde el mes pasado
+              Total de productos en tu inventario
             </p>
           </CardContent>
         </Card>
@@ -110,9 +143,9 @@ const Index = () => {
             <ShoppingCart className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">12</div>
+            <div className="text-2xl font-bold">0</div> {/* Placeholder */}
             <p className="text-xs text-muted-foreground">
-              +5 desde la semana pasada
+              (Funcionalidad próxima)
             </p>
           </CardContent>
         </Card>
@@ -124,9 +157,9 @@ const Index = () => {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$1,234.50</div>
+            <div className="text-2xl font-bold">$0.00</div> {/* Placeholder */}
             <p className="text-xs text-muted-foreground">
-              +10% desde ayer
+              (Funcionalidad próxima)
             </p>
           </CardContent>
         </Card>
