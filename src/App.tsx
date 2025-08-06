@@ -14,7 +14,9 @@ import Products from "./pages/Products";
 import Ingredients from "./pages/Ingredients";
 import Orders from "./pages/Orders";
 import CakeQuoter from "./pages/CakeQuoter";
-import CakeQuoterSettings from "./pages/CakeQuoterSettings"; // Importa la nueva página CakeQuoterSettings
+import CakeQuoterSettings from "./pages/CakeQuoterSettings";
+import POS from "./pages/POS"; // Importa la nueva página POS
+import Customers from "./pages/Customers"; // Importa la nueva página Customers
 
 const queryClient = new QueryClient();
 
@@ -60,7 +62,9 @@ const App = () => (
               <Route path="ingredients" element={<Ingredients />} />
               <Route path="orders" element={<Orders />} />
               <Route path="cake-quoter" element={<CakeQuoter />} />
-              <Route path="cake-quoter-settings" element={<CakeQuoterSettings />} /> {/* Añade la nueva ruta */}
+              <Route path="cake-quoter-settings" element={<CakeQuoterSettings />} />
+              <Route path="pos" element={<POS />} /> {/* Añade la nueva ruta POS */}
+              <Route path="customers" element={<Customers />} /> {/* Añade la nueva ruta Customers */}
               {/* AÑADE TODAS LAS RUTAS PERSONALIZADAS AQUÍ COMO RUTAS ANIDADAS */}
             </Route>
             <Route path="*" element={<NotFound />} />
