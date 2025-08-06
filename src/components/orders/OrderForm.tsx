@@ -65,11 +65,11 @@ export const OrderForm: React.FC<OrderFormProps> = ({ initialData, onSuccess, on
   const [currentProductId, setCurrentProductId] = useState<string>('');
   const [currentQuantity, setCurrentQuantity] = useState<number>(1);
 
-  // Fetch available products
+  // Fetch available products (removed stock filter)
   const { data: availableProducts, isLoading: isLoadingProducts, error: productsError } = useQuery<Product[]>({
     queryKey: ['products'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('products').select('*').gt('stock', 0); // Only show products with stock > 0
+      const { data, error } = await supabase.from('products').select('*');
       if (error) throw error;
       return data;
     },
@@ -120,10 +120,11 @@ export const OrderForm: React.FC<OrderFormProps> = ({ initialData, onSuccess, on
       return;
     }
 
-    if (currentQuantity > productToAdd.stock) {
-      showError(`No hay suficiente stock para ${productToAdd.name}. Stock disponible: ${productToAdd.stock}`);
-      return;
-    }
+    // Removed stock check as per new requirement: "no descuentes nada del stock"
+    // if (currentQuantity > productToAdd.stock) {
+    //   showError(`No hay suficiente stock para ${productToAdd.name}. Stock disponible: ${productToAdd.stock}`);
+    //   return;
+    // }
 
     const existingItemIndex = selectedProductsForOrder.findIndex(item => item.product_id === currentProductId);
 
@@ -184,9 +185,8 @@ export const OrderForm: React.FC<OrderFormProps> = ({ initialData, onSuccess, on
 
     const orderId = orderData.id;
     let allItemsInserted = true;
-    let allStockUpdated = true;
 
-    // 2. Insert order items and update product stock
+    // 2. Insert order items (stock update logic removed)
     for (const item of selectedProductsForOrder) {
       // Insert into order_items
       const { error: itemError } = await supabase.from('order_items').insert({
@@ -202,39 +202,16 @@ export const OrderForm: React.FC<OrderFormProps> = ({ initialData, onSuccess, on
         // Consider rolling back the order here if this is critical
         continue;
       }
-
-      // Update product stock
-      const { data: product, error: fetchProductError } = await supabase
-        .from('products')
-        .select('stock')
-        .eq('id', item.product_id)
-        .single();
-
-      if (fetchProductError || !product) {
-        showError(`Error al obtener stock para ${item.name}: ${fetchProductError?.message || 'Producto no encontrado'}`);
-        allStockUpdated = false;
-        continue;
-      }
-
-      const newStock = product.stock - item.quantity;
-      const { error: stockError } = await supabase
-        .from('products')
-        .update({ stock: newStock })
-        .eq('id', item.product_id);
-
-      if (stockError) {
-        showError(`Error al actualizar stock para ${item.name}: ${stockError.message}`);
-        allStockUpdated = false;
-      }
+      // Stock update logic removed as per user request
     }
 
-    if (allItemsInserted && allStockUpdated) {
-      showSuccess('Pedido creado y stock actualizado correctamente.');
+    if (allItemsInserted) {
+      showSuccess('Pedido creado correctamente.');
       queryClient.invalidateQueries({ queryKey: ['orders'] });
-      queryClient.invalidateQueries({ queryKey: ['products'] }); // Invalidate products to reflect stock changes
+      // No need to invalidate products query for stock changes
       onSuccess();
     } else {
-      showError('El pedido se creó, pero hubo problemas con algunos ítems o la actualización de stock.');
+      showError('El pedido se creó, pero hubo problemas con algunos ítems.');
       // You might want to implement more robust error handling/rollback here
     }
   };
