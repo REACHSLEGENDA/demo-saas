@@ -120,12 +120,6 @@ export const OrderForm: React.FC<OrderFormProps> = ({ initialData, onSuccess, on
       return;
     }
 
-    // Removed stock check as per new requirement: "no descuentes nada del stock"
-    // if (currentQuantity > productToAdd.stock) {
-    //   showError(`No hay suficiente stock para ${productToAdd.name}. Stock disponible: ${productToAdd.stock}`);
-    //   return;
-    // }
-
     const existingItemIndex = selectedProductsForOrder.findIndex(item => item.product_id === currentProductId);
 
     if (existingItemIndex > -1) {
@@ -166,6 +160,13 @@ export const OrderForm: React.FC<OrderFormProps> = ({ initialData, onSuccess, on
       return;
     }
 
+    console.log("Attempting to create order with data:", {
+      user_id: session.user.id,
+      customer_name: values.customer_name || null,
+      total_amount: totalAmount,
+      status: values.status,
+    });
+
     // 1. Create the order
     const { data: orderData, error: orderError } = await supabase
       .from('orders')
@@ -178,17 +179,29 @@ export const OrderForm: React.FC<OrderFormProps> = ({ initialData, onSuccess, on
       .select()
       .single();
 
-    if (orderError || !orderData) {
-      showError('Error al crear el pedido: ' + (orderError?.message || 'Desconocido'));
+    if (orderError) {
+      console.error("Supabase error creating order:", orderError);
+      showError('Error al crear el pedido: ' + orderError.message);
+      return;
+    }
+    if (!orderData) {
+      console.error("No order data returned after insert.");
+      showError('Error al crear el pedido: No se recibieron datos del pedido.');
       return;
     }
 
+    console.log("Order created successfully:", orderData);
     const orderId = orderData.id;
     let allItemsInserted = true;
 
-    // 2. Insert order items (stock update logic removed)
+    // 2. Insert order items
     for (const item of selectedProductsForOrder) {
-      // Insert into order_items
+      console.log("Attempting to insert order item:", {
+        order_id: orderId,
+        product_id: item.product_id,
+        quantity: item.quantity,
+        price_at_order: item.price,
+      });
       const { error: itemError } = await supabase.from('order_items').insert({
         order_id: orderId,
         product_id: item.product_id,
@@ -197,22 +210,20 @@ export const OrderForm: React.FC<OrderFormProps> = ({ initialData, onSuccess, on
       });
 
       if (itemError) {
+        console.error(`Supabase error inserting item ${item.name}:`, itemError);
         showError(`Error al añadir el ítem ${item.name}: ${itemError.message}`);
         allItemsInserted = false;
-        // Consider rolling back the order here if this is critical
         continue;
       }
-      // Stock update logic removed as per user request
+      console.log(`Item ${item.name} inserted successfully.`);
     }
 
     if (allItemsInserted) {
       showSuccess('Pedido creado correctamente.');
       queryClient.invalidateQueries({ queryKey: ['orders'] });
-      // No need to invalidate products query for stock changes
       onSuccess();
     } else {
-      showError('El pedido se creó, pero hubo problemas con algunos ítems.');
-      // You might want to implement more robust error handling/rollback here
+      showError('El pedido se creó, pero hubo problemas con algunos ítems. Revisa la consola para más detalles.');
     }
   };
 
