@@ -17,7 +17,7 @@ import CakeQuoter from "./pages/CakeQuoter";
 import CakeQuoterSettings from "./pages/CakeQuoterSettings";
 import POS from "./pages/POS";
 import SalesManagement from "./pages/SalesManagement";
-import Settings from "./pages/Settings"; // Importa la nueva página de configuración
+// import Settings from "./pages/Settings"; // Eliminada la importación de la página de configuración
 
 const queryClient = new QueryClient();
 
@@ -66,7 +66,7 @@ const App = () => (
               <Route path="cake-quoter-settings" element={<CakeQuoterSettings />} />
               <Route path="pos" element={<POS />} />
               <Route path="sales-management" element={<SalesManagement />} />
-              <Route path="settings" element={<Settings />} /> {/* Nueva ruta para la página de configuración */}
+              {/* <Route path="settings" element={<Settings />} /> */} {/* Eliminada la ruta para la página de configuración */}
               {/* AÑADE TODAS LAS RUTAS PERSONALIZADAS AQUÍ COMO RUTAS ANIDADAS */}
             </Route>
             <Route path="*" element={<NotFound />} />

@@ -40,7 +40,7 @@ const Sidebar: React.FC = () => {
     { to: "/pos", label: "Punto de Venta", icon: <Store className="h-4 w-4" /> },
     { to: "/sales-management", label: "Gestión de Ventas", icon: <TrendingUp className="h-4 w-4" /> }, // Nuevo enlace para gestión de ventas
     // { to: "/users", label: "Usuarios", icon: <Users className="h-4 w-4" /> }, // Eliminado según la solicitud
-    { to: "/settings", label: "Configuración", icon: <Settings className="h-4 w-4" /> },
+    // { to: "/settings", label: "Configuración", icon: <Settings className="h-4 w-4" /> }, // Eliminado el enlace a la página de configuración
   ];
 
   const sidebarContent = (
