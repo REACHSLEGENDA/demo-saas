@@ -68,7 +68,7 @@ const Sidebar: React.FC = () => {
             </Button>
           </SheetTrigger>
           <SheetContent side="left" className="flex flex-col">
-            <h2 className="text-lg font-semibold p-4">Pastelería SaaS</h2>
+            <h2 className="text-lg font-semibold p-4">SweetTrack</h2>
             {sidebarContent}
           </SheetContent>
         </Sheet>
@@ -77,7 +77,7 @@ const Sidebar: React.FC = () => {
           <div className="flex h-full max-h-screen flex-col gap-2">
             <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
               <Link to="/" className="flex items-center gap-2 font-semibold">
-                <span className="text-lg">Pastelería SaaS</span>
+                <span className="text-lg">SweetTrack</span>
               </Link>
             </div>
             <div className="flex-1">

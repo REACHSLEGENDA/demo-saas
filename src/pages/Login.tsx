@@ -8,7 +8,7 @@ const Login = () => {
     <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">Bienvenido a Pastelería SaaS</CardTitle>
+          <CardTitle className="text-2xl font-bold">Bienvenido a SweetTrack</CardTitle>
           <CardDescription>Inicia sesión o regístrate para continuar</CardDescription>
         </CardHeader>
         <CardContent>
