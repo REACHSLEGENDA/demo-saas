@@ -12,11 +12,12 @@ import { useSession } from "./contexts/SessionContext";
 import React from "react";
 import Products from "./pages/Products";
 import Ingredients from "./pages/Ingredients";
-import Orders from "./pages/Orders"; // Import the new Orders page
+import Orders from "./pages/Orders";
+import CakeQuoter from "./pages/CakeQuoter"; // Importa la nueva página CakeQuoter
 
 const queryClient = new QueryClient();
 
-// A wrapper component to protect routes
+// Un componente wrapper para proteger rutas
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { session, loading } = useSession();
 
@@ -29,7 +30,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   }
 
   if (!session) {
-    // SessionContext already handles navigation to /login
+    // SessionContext ya maneja la navegación a /login
     return null;
   }
 
@@ -53,11 +54,12 @@ const App = () => (
                 </ProtectedRoute>
               }
             >
-              <Route index element={<Index />} /> {/* Default route for DashboardLayout */}
+              <Route index element={<Index />} /> {/* Ruta por defecto para DashboardLayout */}
               <Route path="products" element={<Products />} />
               <Route path="ingredients" element={<Ingredients />} />
-              <Route path="orders" element={<Orders />} /> {/* Add the new Orders route */}
-              {/* ADD ALL CUSTOM ROUTES HERE AS NESTED ROUTES */}
+              <Route path="orders" element={<Orders />} />
+              <Route path="cake-quoter" element={<CakeQuoter />} /> {/* Añade la nueva ruta CakeQuoter */}
+              {/* AÑADE TODAS LAS RUTAS PERSONALIZADAS AQUÍ COMO RUTAS ANIDADAS */}
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
