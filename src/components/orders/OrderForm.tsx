@@ -48,7 +48,9 @@ const orderSchema = z.object({
   status: z.enum(['pending', 'completed', 'cancelled'], {
     required_error: 'El estado es requerido',
   }),
-  items: z.array(orderItemSchema).min(1, 'Debe añadir al menos un producto al pedido.'),
+  // The 'items' field is still defined for schema completeness,
+  // but its validation will be handled manually in onSubmit for better control.
+  items: z.array(orderItemSchema).optional(), // Make optional as we'll handle its validation manually
 });
 
 interface OrderFormProps {
@@ -65,7 +67,7 @@ export const OrderForm: React.FC<OrderFormProps> = ({ initialData, onSuccess, on
   const [currentProductId, setCurrentProductId] = useState<string>('');
   const [currentQuantity, setCurrentQuantity] = useState<number>(1);
 
-  // Fetch available products (removed stock filter)
+  // Fetch available products (no stock filter, as orders are 'bajo pedido')
   const { data: availableProducts, isLoading: isLoadingProducts, error: productsError } = useQuery<Product[]>({
     queryKey: ['products'],
     queryFn: async () => {
@@ -80,7 +82,7 @@ export const OrderForm: React.FC<OrderFormProps> = ({ initialData, onSuccess, on
     defaultValues: {
       customer_name: '',
       status: 'pending',
-      items: [], // This is the default, but it's never updated by a FormField
+      // No need to set default for items here as it's managed separately
     },
   });
 
@@ -94,8 +96,8 @@ export const OrderForm: React.FC<OrderFormProps> = ({ initialData, onSuccess, on
       form.reset({
         customer_name: initialData.customer_name || '',
         status: initialData.status,
-        items: [], 
       });
+      // If you need to edit items, you'd fetch them here and set setSelectedProductsForOrder
     } else {
       form.reset();
       setSelectedProductsForOrder([]);
@@ -133,12 +135,18 @@ export const OrderForm: React.FC<OrderFormProps> = ({ initialData, onSuccess, on
       ]);
     }
 
+    // Clear any existing 'items' error once a product is added
+    form.clearErrors('items');
     setCurrentProductId('');
     setCurrentQuantity(1);
   };
 
   const handleRemoveProduct = (productId: string) => {
     setSelectedProductsForOrder(selectedProductsForOrder.filter(item => item.product_id !== productId));
+    // If removing the last product, set an error for 'items'
+    if (selectedProductsForOrder.length === 1) { // If only one item was left before removal
+      form.setError('items', { message: 'Debe añadir al menos un producto al pedido.' });
+    }
   };
 
   const onSubmit = async (values: z.infer<typeof orderSchema>) => {
@@ -147,15 +155,13 @@ export const OrderForm: React.FC<OrderFormProps> = ({ initialData, onSuccess, on
       return;
     }
 
-    // Sincronizar el array de productos seleccionados con el campo 'items' del formulario
-    // Esto asegura que Zod valide correctamente la lista de ítems.
-    form.setValue('items', selectedProductsForOrder);
-    await form.trigger('items'); // Forzar la revalidación del campo 'items'
-
-    if (form.formState.errors.items) {
-      // Si hay un error de validación en 'items', mostrar el mensaje y detener el envío
-      showError(form.formState.errors.items.message || 'Error de validación en los productos del pedido.');
+    // Manual validation for selected products
+    if (selectedProductsForOrder.length === 0) {
+      form.setError('items', { message: 'Debe añadir al menos un producto al pedido.' });
+      showError('Debe añadir al menos un producto al pedido.');
       return;
+    } else {
+      form.clearErrors('items'); // Clear error if products are present
     }
 
     console.log("Attempting to create order with data:", {
@@ -192,7 +198,7 @@ export const OrderForm: React.FC<OrderFormProps> = ({ initialData, onSuccess, on
     const orderId = orderData.id;
     let allItemsInserted = true;
 
-    // 2. Insert order items
+    // 2. Insert order items (stock update logic removed as per user request)
     for (const item of selectedProductsForOrder) {
       console.log("Attempting to insert order item:", {
         order_id: orderId,
@@ -272,7 +278,7 @@ export const OrderForm: React.FC<OrderFormProps> = ({ initialData, onSuccess, on
               <PlusCircle className="h-4 w-4" />
             </Button>
           </div>
-          {/* La validación de Zod ahora manejará este mensaje */}
+          {/* Display the error message for 'items' if it exists */}
           {form.formState.errors.items && (
             <FormMessage>{form.formState.errors.items.message}</FormMessage>
           )}
