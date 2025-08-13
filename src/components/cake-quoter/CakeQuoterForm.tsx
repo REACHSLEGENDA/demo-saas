@@ -138,6 +138,7 @@ export const CakeQuoterForm: React.FC = () => {
   const handleAddOption = (
     currentId: string,
     optionsList: QuoterOption[],
+    selectedItems: QuoteItem[], // <-- Added this argument
     setSelectedItems: React.Dispatch<React.SetStateAction<QuoteItem[]>>,
     type: QuoteItem['type'],
     errorMessage: string
@@ -147,10 +148,12 @@ export const CakeQuoterForm: React.FC = () => {
       return;
     }
     const optionToAdd = optionsList.find(o => o.id === currentId);
-    if (optionToAdd && !setSelectedItems.arguments[0].some((item: QuoteItem) => item.value === currentId)) {
-      setSelectedItems(prev => [...prev, { type, value: optionToAdd.id, label: optionToAdd.name, price: optionToAdd.price }]);
-    } else if (optionToAdd) {
-      showError('Esta opción ya ha sido añadida.');
+    if (optionToAdd) {
+      if (selectedItems.some((item: QuoteItem) => item.value === currentId)) { // <-- Corrected check
+        showError('Esta opción ya ha sido añadida.');
+      } else {
+        setSelectedItems(prev => [...prev, { type, value: optionToAdd.id, label: optionToAdd.name, price: optionToAdd.price }]);
+      }
     }
   };
 
@@ -185,10 +188,8 @@ export const CakeQuoterForm: React.FC = () => {
       return;
     }
 
-    if (selectedFillings.length === 0 && fillings.length > 0) {
-      showError('Por favor, añade al menos un relleno.');
-      return;
-    }
+    // Removed the check for selectedFillings.length === 0 as it might not be mandatory for all cakes.
+    // If a filling is truly mandatory, it should be enforced by the business logic or UI.
 
     const customerName = values.customer_name || 'Cliente de Cotización';
     const totalAmount = quoteBreakdown.total;
@@ -341,7 +342,7 @@ export const CakeQuoterForm: React.FC = () => {
                     ))}
                   </SelectContent>
                 </Select>
-                <Button type="button" onClick={() => handleAddOption(currentFillingId, fillings, setSelectedFillings, 'filling', 'Por favor, selecciona un relleno.')} size="icon">
+                <Button type="button" onClick={() => handleAddOption(currentFillingId, fillings, selectedFillings, setSelectedFillings, 'filling', 'Por favor, selecciona un relleno.')} size="icon">
                   <PlusCircle className="h-4 w-4" />
                 </Button>
               </div>
@@ -381,7 +382,7 @@ export const CakeQuoterForm: React.FC = () => {
                     ))}
                   </SelectContent>
                 </Select>
-                <Button type="button" onClick={() => handleAddOption(currentCoveringId, coverings, setSelectedCoverings, 'covering', 'Por favor, selecciona una cobertura.')} size="icon">
+                <Button type="button" onClick={() => handleAddOption(currentCoveringId, coverings, selectedCoverings, setSelectedCoverings, 'covering', 'Por favor, selecciona una cobertura.')} size="icon">
                   <PlusCircle className="h-4 w-4" />
                 </Button>
               </div>
@@ -418,7 +419,7 @@ export const CakeQuoterForm: React.FC = () => {
                     ))}
                   </SelectContent>
                 </Select>
-                <Button type="button" onClick={() => handleAddOption(currentDecorationId, decorations, setSelectedDecorations, 'decoration', 'Por favor, selecciona una decoración.')} size="icon">
+                <Button type="button" onClick={() => handleAddOption(currentDecorationId, decorations, selectedDecorations, setSelectedDecorations, 'decoration', 'Por favor, selecciona una decoración.')} size="icon">
                   <PlusCircle className="h-4 w-4" />
                 </Button>
               </div>
@@ -455,7 +456,7 @@ export const CakeQuoterForm: React.FC = () => {
                     ))}
                   </SelectContent>
                 </Select>
-                <Button type="button" onClick={() => handleAddOption(currentSpecialOptionId, specialOptions, setSelectedSpecialOptions, 'special_option', 'Por favor, selecciona una opción especial.')} size="icon">
+                <Button type="button" onClick={() => handleAddOption(currentSpecialOptionId, specialOptions, selectedSpecialOptions, setSelectedSpecialOptions, 'special_option', 'Por favor, selecciona una opción especial.')} size="icon">
                   <PlusCircle className="h-4 w-4" />
                 </Button>
               </div>

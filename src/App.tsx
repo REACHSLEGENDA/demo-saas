@@ -6,9 +6,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
-import { SessionContextProvider } from "./contexts/SessionContext";
+import { SessionContextProvider, useSession } from "./contexts/SessionContext";
 import DashboardLayout from "./components/layout/DashboardLayout";
-import { useSession } from "./contexts/SessionContext";
 import React from "react";
 import Products from "./pages/Products";
 import Ingredients from "./pages/Ingredients";
@@ -17,13 +16,13 @@ import CakeQuoter from "./pages/CakeQuoter";
 import CakeQuoterSettings from "./pages/CakeQuoterSettings";
 import POS from "./pages/POS";
 import SalesManagement from "./pages/SalesManagement";
-// import Settings from "./pages/Settings"; // Eliminada la importación de la página de configuración
+import Unapproved from "./pages/Unapproved"; // Import the new Unapproved page
 
 const queryClient = new QueryClient();
 
 // Un componente wrapper para proteger rutas
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { session, loading } = useSession();
+  const { session, loading, isApproved } = useSession(); // Get isApproved from session context
 
   if (loading) {
     return (
@@ -34,8 +33,13 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   }
 
   if (!session) {
-    // SessionContext ya maneja la navegación a /login
+    // SessionContext already handles navigation to /login
     return null;
+  }
+
+  if (!isApproved) {
+    // If user is authenticated but not approved, redirect to unapproved page
+    return <Unapproved />;
   }
 
   return <>{children}</>;
@@ -50,6 +54,7 @@ const App = () => (
         <SessionContextProvider>
           <Routes>
             <Route path="/login" element={<Login />} />
+            <Route path="/unapproved" element={<Unapproved />} /> {/* New route for unapproved users */}
             <Route
               path="/"
               element={
@@ -66,7 +71,6 @@ const App = () => (
               <Route path="cake-quoter-settings" element={<CakeQuoterSettings />} />
               <Route path="pos" element={<POS />} />
               <Route path="sales-management" element={<SalesManagement />} />
-              {/* <Route path="settings" element={<Settings />} /> */} {/* Eliminada la ruta para la página de configuración */}
               {/* AÑADE TODAS LAS RUTAS PERSONALIZADAS AQUÍ COMO RUTAS ANIDADAS */}
             </Route>
             <Route path="*" element={<NotFound />} />

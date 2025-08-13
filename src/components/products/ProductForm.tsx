@@ -142,7 +142,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({ initialData, onSuccess
             <FormItem>
               <FormLabel>Precio</FormLabel>
               <FormControl>
-                <Input type="number" step="0.01" {...field} onChange={e => field.onChange(e.target.value)} />
+                <Input type="number" step="0.01" min="0" {...field} onChange={e => field.onChange(e.target.value)} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -155,7 +155,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({ initialData, onSuccess
             <FormItem>
               <FormLabel>Stock</FormLabel>
               <FormControl>
-                <Input type="number" {...field} onChange={e => field.onChange(e.target.value)} />
+                <Input type="number" min="0" {...field} onChange={e => field.onChange(e.target.value)} />
               </FormControl>
               <FormMessage />
             </FormItem>

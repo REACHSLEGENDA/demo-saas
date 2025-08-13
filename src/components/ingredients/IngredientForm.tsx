@@ -138,7 +138,7 @@ export const IngredientForm: React.FC<IngredientFormProps> = ({ initialData, onS
             <FormItem>
               <FormLabel>Stock Actual</FormLabel>
               <FormControl>
-                <Input type="number" step="0.01" {...field} onChange={e => field.onChange(e.target.value)} />
+                <Input type="number" step="0.01" min="0" {...field} onChange={e => field.onChange(e.target.value)} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -151,7 +151,7 @@ export const IngredientForm: React.FC<IngredientFormProps> = ({ initialData, onS
             <FormItem>
               <FormLabel>Nivel Mínimo de Stock</FormLabel>
               <FormControl>
-                <Input type="number" step="0.01" {...field} onChange={e => field.onChange(e.target.value)} />
+                <Input type="number" step="0.01" min="0" {...field} onChange={e => field.onChange(e.target.value)} />
               </FormControl>
               <FormMessage />
             </FormItem>
