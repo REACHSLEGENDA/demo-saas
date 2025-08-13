@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Package, Utensils, ShoppingCart, Users, Settings, Home, Cake, SlidersHorizontal, Store, TrendingUp } from 'lucide-react'; // Import TrendingUp icon for Sales
+import { Package, Utensils, ShoppingCart, Users, Settings, Home, Cake, SlidersHorizontal, Store, TrendingUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -38,9 +38,7 @@ const Sidebar: React.FC = () => {
     { to: "/cake-quoter-settings", label: "Configuración Cotizador", icon: <SlidersHorizontal className="h-4 w-4" /> },
     { to: "/orders", label: "Pedidos", icon: <ShoppingCart className="h-4 w-4" /> },
     { to: "/pos", label: "Punto de Venta", icon: <Store className="h-4 w-4" /> },
-    { to: "/sales-management", label: "Gestión de Ventas", icon: <TrendingUp className="h-4 w-4" /> }, // Nuevo enlace para gestión de ventas
-    // { to: "/users", label: "Usuarios", icon: <Users className="h-4 w-4" /> }, // Eliminado según la solicitud
-    // { to: "/settings", label: "Configuración", icon: <Settings className="h-4 w-4" /> }, // Eliminado el enlace a la página de configuración
+    { to: "/sales-management", label: "Gestión de Ventas", icon: <TrendingUp className="h-4 w-4" /> },
   ];
 
   const sidebarContent = (
@@ -59,33 +57,33 @@ const Sidebar: React.FC = () => {
 
   return (
     <>
-      {isMobile ? (
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button variant="outline" size="icon" className="shrink-0 md:hidden">
-              <Home className="h-5 w-5" />
-              <span className="sr-only">Toggle navigation menu</span>
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="left" className="flex flex-col">
-            <h2 className="text-lg font-semibold p-4">SweetTrack</h2>
+      {/* Mobile Sidebar */}
+      <Sheet>
+        <SheetTrigger asChild className="md:hidden">
+          <Button variant="outline" size="icon" className="shrink-0">
+            <Home className="h-5 w-5" />
+            <span className="sr-only">Toggle navigation menu</span>
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="left" className="flex flex-col">
+          <h2 className="text-lg font-semibold p-4">SweetTrack</h2>
+          {sidebarContent}
+        </SheetContent>
+      </Sheet>
+
+      {/* Desktop Sidebar */}
+      <div className="hidden border-r bg-sidebar-background md:block">
+        <div className="flex h-full max-h-screen flex-col gap-2">
+          <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
+            <Link to="/" className="flex items-center gap-2 font-semibold">
+              <span className="text-lg">SweetTrack</span>
+            </Link>
+          </div>
+          <div className="flex-1">
             {sidebarContent}
-          </SheetContent>
-        </Sheet>
-      ) : (
-        <div className="hidden border-r bg-sidebar-background lg:block">
-          <div className="flex h-full max-h-screen flex-col gap-2">
-            <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
-              <Link to="/" className="flex items-center gap-2 font-semibold">
-                <span className="text-lg">SweetTrack</span>
-              </Link>
-            </div>
-            <div className="flex-1">
-              {sidebarContent}
-            </div>
           </div>
         </div>
-      )}
+      </div>
     </>
   );
 };
