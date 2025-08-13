@@ -16,13 +16,12 @@ import CakeQuoter from "./pages/CakeQuoter";
 import CakeQuoterSettings from "./pages/CakeQuoterSettings";
 import POS from "./pages/POS";
 import SalesManagement from "./pages/SalesManagement";
-import Unapproved from "./pages/Unapproved"; // Import the new Unapproved page
 
 const queryClient = new QueryClient();
 
 // Un componente wrapper para proteger rutas
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { session, loading, isApproved } = useSession(); // Get isApproved from session context
+  const { session, loading } = useSession();
 
   if (loading) {
     return (
@@ -37,11 +36,6 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
     return null;
   }
 
-  if (!isApproved) {
-    // If user is authenticated but not approved, redirect to unapproved page
-    return <Unapproved />;
-  }
-
   return <>{children}</>;
 };
 
@@ -54,7 +48,6 @@ const App = () => (
         <SessionContextProvider>
           <Routes>
             <Route path="/login" element={<Login />} />
-            <Route path="/unapproved" element={<Unapproved />} /> {/* New route for unapproved users */}
             <Route
               path="/"
               element={

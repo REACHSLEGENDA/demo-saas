@@ -6,7 +6,6 @@ import { useNavigate } from 'react-router-dom';
 interface SessionContextType {
   session: Session | null;
   loading: boolean;
-  isApproved: boolean; // Add isApproved to the context
 }
 
 const SessionContext = createContext<SessionContextType | undefined>(undefined);
@@ -14,48 +13,29 @@ const SessionContext = createContext<SessionContextType | undefined>(undefined);
 export const SessionContextProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isApproved, setIsApproved] = useState(false); // New state for approval status
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchUserProfile = async (userId: string) => {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('aprobado')
-        .eq('id', userId)
-        .single();
-
-      if (error) {
-        console.error("Error fetching user approval status:", error);
-        setIsApproved(false);
-      } else if (data) {
-        setIsApproved(data.aprobado);
-      }
-    };
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, currentSession) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, currentSession) => {
       setSession(currentSession);
       setLoading(false);
 
       if (currentSession) {
-        await fetchUserProfile(currentSession.user.id); // Fetch approval status on session change
-        if (location.pathname === '/login' || location.pathname === '/unapproved') {
+        if (location.pathname === '/login') {
           navigate('/');
         }
       } else {
-        setIsApproved(false); // Reset approval status on sign out
         if (location.pathname !== '/login') {
           navigate('/login');
         }
       }
     });
 
-    supabase.auth.getSession().then(async ({ data: { session: currentSession } }) => {
+    supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
       setSession(currentSession);
       setLoading(false);
       if (currentSession) {
-        await fetchUserProfile(currentSession.user.id); // Fetch approval status on initial load
-        if (location.pathname === '/login' || location.pathname === '/unapproved') {
+        if (location.pathname === '/login') {
           navigate('/');
         }
       } else if (location.pathname !== '/login') {
@@ -67,7 +47,7 @@ export const SessionContextProvider: React.FC<{ children: React.ReactNode }> = (
   }, [navigate]);
 
   return (
-    <SessionContext.Provider value={{ session, loading, isApproved }}>
+    <SessionContext.Provider value={{ session, loading }}>
       {children}
     </SessionContext.Provider>
   );
