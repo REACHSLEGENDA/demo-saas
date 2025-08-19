@@ -1,9 +1,8 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
 import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 const Login = () => {
   return (
@@ -44,22 +43,12 @@ const Login = () => {
                   link_text: '',
                 },
                 forgotten_password: {
-                  email_label: 'Correo electrónico',
-                  password_reset_button_label: 'Enviar instrucciones de restablecimiento',
-                  link_text: '¿Olvidaste tu contraseña?',
+                  link_text: '', // Oculta el enlace de "¿Olvidaste tu contraseña?"
                 },
               },
             }}
           />
         </CardContent>
-        <CardFooter className="flex justify-center">
-          <p className="text-sm text-gray-600">
-            ¿No tienes una cuenta?{' '}
-            <Link to="/register" className="font-medium text-primary hover:underline">
-              Regístrate
-            </Link>
-          </p>
-        </CardFooter>
       </Card>
     </div>
   );
