@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 interface SessionContextType {
   session: Session | null;
@@ -14,6 +14,7 @@ export const SessionContextProvider: React.FC<{ children: React.ReactNode }> = (
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, currentSession) => {
@@ -21,11 +22,11 @@ export const SessionContextProvider: React.FC<{ children: React.ReactNode }> = (
       setLoading(false);
 
       if (currentSession) {
-        if (location.pathname === '/login') {
+        if (location.pathname === '/login' || location.pathname === '/register') {
           navigate('/');
         }
       } else {
-        if (location.pathname !== '/login') {
+        if (location.pathname !== '/login' && location.pathname !== '/register') {
           navigate('/login');
         }
       }
@@ -35,16 +36,16 @@ export const SessionContextProvider: React.FC<{ children: React.ReactNode }> = (
       setSession(currentSession);
       setLoading(false);
       if (currentSession) {
-        if (location.pathname === '/login') {
+        if (location.pathname === '/login' || location.pathname === '/register') {
           navigate('/');
         }
-      } else if (location.pathname !== '/login') {
+      } else if (location.pathname !== '/login' && location.pathname !== '/register') {
         navigate('/login');
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [navigate, location]);
 
   return (
     <SessionContext.Provider value={{ session, loading }}>

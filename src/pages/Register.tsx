@@ -5,14 +5,14 @@ import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 
-const Login = () => {
+const Register = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">Bienvenido a SweetTrack</CardTitle>
+          <CardTitle className="text-2xl font-bold">Crea tu cuenta en SweetTrack</CardTitle>
           <CardDescription>
-            Inicia sesión para continuar
+            Regístrate para empezar a gestionar tu pastelería.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -31,22 +31,17 @@ const Login = () => {
               },
             }}
             theme="light"
-            view="sign_in"
+            view="sign_up"
             localization={{
               variables: {
-                sign_in: {
+                sign_up: {
                   email_label: 'Correo electrónico',
                   password_label: 'Contraseña',
                   email_input_placeholder: 'Tu correo electrónico',
                   password_input_placeholder: 'Tu contraseña',
-                  button_label: 'Iniciar sesión',
-                  social_provider_text: 'Iniciar sesión con {{provider}}',
-                  link_text: '',
-                },
-                forgotten_password: {
-                  email_label: 'Correo electrónico',
-                  password_reset_button_label: 'Enviar instrucciones de restablecimiento',
-                  link_text: '¿Olvidaste tu contraseña?',
+                  button_label: 'Registrarse',
+                  social_provider_text: 'Registrarse con {{provider}}',
+                  link_text: '', // Oculta el enlace por defecto
                 },
               },
             }}
@@ -54,9 +49,9 @@ const Login = () => {
         </CardContent>
         <CardFooter className="flex justify-center">
           <p className="text-sm text-gray-600">
-            ¿No tienes una cuenta?{' '}
-            <Link to="/register" className="font-medium text-primary hover:underline">
-              Regístrate
+            ¿Ya tienes una cuenta?{' '}
+            <Link to="/login" className="font-medium text-primary hover:underline">
+              Inicia sesión
             </Link>
           </p>
         </CardFooter>
@@ -65,4 +60,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default Register;

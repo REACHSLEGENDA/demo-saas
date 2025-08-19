@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
+import Register from "./pages/Register";
 import { SessionContextProvider, useSession } from "./contexts/SessionContext";
 import DashboardLayout from "./components/layout/DashboardLayout";
 import React from "react";
@@ -48,6 +49,7 @@ const App = () => (
         <SessionContextProvider>
           <Routes>
             <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
             <Route
               path="/"
               element={
