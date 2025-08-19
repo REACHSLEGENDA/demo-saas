@@ -40,6 +40,7 @@ const Register = () => {
                   email_input_placeholder: 'Tu correo electrónico',
                   password_input_placeholder: 'Tu contraseña',
                   button_label: 'Registrarse',
+                  link_text: '',
                 },
               },
             }}

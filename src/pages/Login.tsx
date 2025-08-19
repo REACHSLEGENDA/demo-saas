@@ -40,6 +40,10 @@ const Login = () => {
                   email_input_placeholder: 'Tu correo electrónico',
                   password_input_placeholder: 'Tu contraseña',
                   button_label: 'Iniciar sesión',
+                  link_text: '',
+                },
+                forgotten_password: {
+                  link_text: '',
                 },
               },
             }}
