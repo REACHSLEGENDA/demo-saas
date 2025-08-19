@@ -18,6 +18,7 @@ const Register = () => {
           <Auth
             supabaseClient={supabase}
             providers={[]}
+            showLinks={false}
             appearance={{
               theme: ThemeSupa,
               variables: {
@@ -39,8 +40,6 @@ const Register = () => {
                   email_input_placeholder: 'Tu correo electrónico',
                   password_input_placeholder: 'Tu contraseña',
                   button_label: 'Registrarse',
-                  social_provider_text: 'Registrarse con {{provider}}',
-                  link_text: '', // Oculta el enlace por defecto
                 },
               },
             }}

@@ -18,6 +18,7 @@ const Login = () => {
           <Auth
             supabaseClient={supabase}
             providers={[]}
+            showLinks={false}
             appearance={{
               theme: ThemeSupa,
               variables: {
@@ -39,11 +40,6 @@ const Login = () => {
                   email_input_placeholder: 'Tu correo electrónico',
                   password_input_placeholder: 'Tu contraseña',
                   button_label: 'Iniciar sesión',
-                  social_provider_text: 'Iniciar sesión con {{provider}}',
-                  link_text: '',
-                },
-                forgotten_password: {
-                  link_text: '', // Oculta el enlace de "¿Olvidaste tu contraseña?"
                 },
               },
             }}
