@@ -1,9 +1,8 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
 import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 const Register = () => {
   return (
@@ -47,14 +46,6 @@ const Register = () => {
             }}
           />
         </CardContent>
-        <CardFooter className="flex justify-center">
-          <p className="text-sm text-gray-600">
-            ¿Ya tienes una cuenta?{' '}
-            <Link to="/login" className="font-medium text-primary hover:underline">
-              Inicia sesión
-            </Link>
-          </p>
-        </CardFooter>
       </Card>
     </div>
   );
